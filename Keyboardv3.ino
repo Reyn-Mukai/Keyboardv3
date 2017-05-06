@@ -36,12 +36,15 @@ Buttons : LED's
 #define LED7 9
 #define LED8 10
 #define LED9 11
+#define SWITCH SCK
 
 int kflag0, kflag1, kflag2, kflag3, kflag4, kflag5, kflag6, kflag7, kflag8, kflag9 = 0;
 unsigned long timer0, timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9 = 0;
 int key0, key1, key2, key3, key4, key5, key6, key7, key8, key9;
+int ledmode = 0;
 
 void setup() {
+  pinMode(SWITCH, INPUT_PULLUP);
   pinMode(BUTTON0, INPUT_PULLUP);
   pinMode(BUTTON1, INPUT_PULLUP);
   pinMode(BUTTON2, INPUT_PULLUP);
@@ -63,35 +66,23 @@ void setup() {
   pinMode(LED8, OUTPUT);
   pinMode(LED9, OUTPUT);
 
-  /*if(digitalRead(BUTTON0) == HIGH && digitalRead(BUTTON1) == HIGH){
-    key0 = 0x30;
-    key1 = 0x31;
-    key2 = 0x32;
-    key3 = 0x33;
-    key4 = 0x34;
-    key5 = 0x35;
-    key6 = 0x36;
-    key7 = 0x37;
-    key8 = 0x38;
-    key9 = 0x39;
-  }*/
-  //else{
-    key0 = 0xB0;
-    key1 = 0x7A;
-    key2 = 0x78;
-    key3 = 0xD8;
-    key4 = 0xD9;
-    key5 = 0xD7;
-    key6 = 0xB1;
-    key7 = 0xC3;
-    key8 = 0x63;
-    key9 = 0xDA;
-  //}
+  key0 = 0xB0;
+  key1 = 0x7A;
+  key2 = 0x78;
+  key3 = 0xD8;
+  key4 = 0xD9;
+  key5 = 0xD7;
+  key6 = 0xB1;
+  key7 = 0xC3;
+  key8 = 0x63;
+  key9 = 0xDA;
+  
   Serial.begin(115200);
   Keyboard.begin();
 }
 
 void loop() {
+  modeCheck();
   kbPress(BUTTON0, LED0, key0, &kflag0, &timer0);
   kbPress(BUTTON1, LED1, key1, &kflag1, &timer1);
   kbPress(BUTTON2, LED2, key2, &kflag2, &timer2);
@@ -106,16 +97,81 @@ void loop() {
 
 void kbPress(int pin, int led, int key, int *flag, unsigned long *timer){
   if(digitalRead(pin) == LOW && *flag == 0){
-    digitalWrite(led, HIGH);
+    if(ledmode == 0){
+      digitalWrite(led, HIGH);
+    }
+    else if(ledmode == 2){
+      writeAll(HIGH);
+    }
     Keyboard.press(key);
     *timer = millis();
     *flag = 1;
   }
   if(digitalRead(pin) == HIGH && *flag == 1 && millis()-*timer > debounceTime){
-    digitalWrite(led, LOW);
+    if(ledmode == 0){
+      digitalWrite(led, LOW);
+    }
+    else if(ledmode == 2){
+      writeAll(LOW);
+    }
     Keyboard.release(key);
     *flag = 0;
   }
+}
+
+void modeCheck(){
+  if(digitalRead(SWITCH) == LOW){
+    Keyboard.releaseAll();
+  }
+  while(digitalRead(SWITCH) == LOW){
+    flagReset();
+    if(digitalRead(BUTTON1) == LOW){
+      ledmode = 0;
+      writeAll(LOW);
+    }
+    if(digitalRead(BUTTON2) == LOW){
+      ledmode = 1;
+      writeAll(HIGH);
+    }
+    if(digitalRead(BUTTON3) == LOW){
+      ledmode = 1;
+      writeAll(LOW);
+    }
+    if(digitalRead(BUTTON4) == LOW){
+      ledmode = 2;
+      writeAll(LOW);
+    }
+    if(digitalRead(BUTTON6) == LOW){ //Default osu! Keybindings
+      key0 = 0xB0;
+      key1 = 0x7A;
+      key2 = 0x78;
+      key3 = 0xD8;
+      key4 = 0xD9;
+      key5 = 0xD7;
+      key6 = 0xB1;
+      key7 = 0xC3;
+      key8 = 0x63;
+      key9 = 0xDA;
+    }
+    if(digitalRead(BUTTON7) == LOW){ //Standard 0 - 9 Keybindings
+      key0 = 0x30;
+      key1 = 0x31;
+      key2 = 0x32;
+      key3 = 0x33;
+      key4 = 0x34;
+      key5 = 0x35;
+      key6 = 0x36;
+      key7 = 0x37;
+      key8 = 0x38;
+      key9 = 0x39;
+    }
+    if(digitalRead(BUTTON8) == LOW){ //WoWs Command Keybindings
+    }
+  }
+}
+
+void flagReset(){
+  kflag0=kflag1=kflag2=kflag3=kflag4=kflag5=kflag6=kflag7=kflag8=kflag9=0;
 }
 
 void writeAll(int state){
