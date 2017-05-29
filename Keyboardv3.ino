@@ -40,6 +40,7 @@ Buttons : LED's
 
 int kflag0, kflag1, kflag2, kflag3, kflag4, kflag5, kflag6, kflag7, kflag8, kflag9 = 0;
 unsigned long timer0, timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9 = 0;
+unsigned long blktimer = 0;
 int key0, key1, key2, key3, key4, key5, key6, key7, key8, key9;
 int ledmode = 0;
 
@@ -93,29 +94,32 @@ void loop() {
   kbPress(BUTTON7, LED7, key7, &kflag7, &timer7);
   kbPress(BUTTON8, LED8, key8, &kflag8, &timer8);
   kbPress(BUTTON9, LED9, key9, &kflag9, &timer9);
+  //if(ledmode==2){
+  //  reactiveAll();
+  //}
 }
 
 void kbPress(int pin, int led, int key, int *flag, unsigned long *timer){
   if(digitalRead(pin) == LOW && *flag == 0){
+    Keyboard.press(key);
+    *timer = millis();
+    *flag = 1;
     if(ledmode == 0){
       digitalWrite(led, HIGH);
     }
     else if(ledmode == 2){
-      writeAll(HIGH);
+      reactiveAll();
     }
-    Keyboard.press(key);
-    *timer = millis();
-    *flag = 1;
   }
   if(digitalRead(pin) == HIGH && *flag == 1 && millis()-*timer > debounceTime){
+    Keyboard.release(key);
+    *flag = 0;
     if(ledmode == 0){
       digitalWrite(led, LOW);
     }
     else if(ledmode == 2){
-      writeAll(LOW);
+      reactiveAll();
     }
-    Keyboard.release(key);
-    *flag = 0;
   }
 }
 
@@ -172,6 +176,15 @@ void modeCheck(){
 
 void flagReset(){
   kflag0=kflag1=kflag2=kflag3=kflag4=kflag5=kflag6=kflag7=kflag8=kflag9=0;
+}
+
+void reactiveAll(){
+  if(kflag0==true||kflag1==true||kflag2==true||kflag3==true||kflag4==true||kflag5==true||kflag6==true||kflag7==true||kflag8==true||kflag9==true){
+    writeAll(HIGH);
+  }
+  else{
+    writeAll(LOW);
+  }
 }
 
 void writeAll(int state){
